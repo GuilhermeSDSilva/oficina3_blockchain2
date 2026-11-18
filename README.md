@@ -245,16 +245,14 @@ Como possibilidades de evolução, podem ser consideradas:
 - Melhorias na experiência de conexão e troca de rede pela MetaMask.
 
 
-## 13. Hospedagem
+## 12. Hospedagem
 
 Aplicação publicada na Vercel:
 
 **URL:** (https://oficina3blockchain2-frontend.vercel.app/).
 
-**URL:** A inserir.
 
-
-## 15. Utilização de inteligência artificial
+## 13. Utilização de inteligência artificial
 
 Foi utilizada inteligência artificial como ferramenta de apoio à organização e elaboração da documentação do projeto. As informações técnicas foram baseadas na implementação existente do contrato inteligente e da interface da StockChain.
 
