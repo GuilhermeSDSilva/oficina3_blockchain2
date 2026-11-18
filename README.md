@@ -244,28 +244,15 @@ Como possibilidades de evolução, podem ser consideradas:
 - Implementação de mecanismos adicionais de controle de usuários e permissões.
 - Melhorias na experiência de conexão e troca de rede pela MetaMask.
 
-## 12. Demonstração
-
-Vídeo de demonstração da aplicação: **A inserir.**
-
-O vídeo deverá apresentar o funcionamento das principais funcionalidades da StockChain, incluindo a conexão da carteira, cadastro de produtos, movimentações de estoque e consulta do histórico.
 
 ## 13. Hospedagem
 
 Aplicação publicada na Vercel:
 
-**URL:** A inserir.
-
-Repositório do projeto no GitHub:
+**URL:** (https://oficina3blockchain2-frontend.vercel.app/).
 
 **URL:** A inserir.
 
-## 14. Equipe
-
-| Integrante | Responsabilidade |
-|---|---|
-| A preencher | A preencher |
-| A preencher | A preencher |
 
 ## 15. Utilização de inteligência artificial
 
