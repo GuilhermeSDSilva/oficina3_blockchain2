@@ -85,6 +85,16 @@ button {
     font-size: 11px;
 }
 
+
+.wallet-balance {
+    background: #eaf1f8;
+    color: var(--primary);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 5px 10px;
+    border-radius: 6px;
+}
+
 .layout {
     display: flex;
     min-height: calc(100vh - 76px);
