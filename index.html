@@ -1,0 +1,260 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StockChain | Controle de Estoque</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="brand">
+        <span class="brand-icon">⬡</span>
+        <div>
+            <h1>StockChain</h1>
+            <small>Controle de Estoque Antifraude</small>
+        </div>
+    </div>
+    <div class="wallet-area">
+        <span id="networkStatus" class="network">● Desconectado</span>
+        <button id="connectBtn" class="btn btn-primary" onclick="connectWallet()">
+            Conectar MetaMask
+        </button>
+        <span id="walletAddress" class="wallet-address"></span>
+    </div>
+</header>
+
+<div class="layout">
+    <aside class="sidebar">
+        <p class="menu-label">MENU PRINCIPAL</p>
+        <button class="nav-btn active" onclick="showTab('dashboard',this)">▦ Visão geral</button>
+        <button class="nav-btn" onclick="showTab('register',this)">＋ Cadastrar produto</button>
+        <button class="nav-btn" onclick="showTab('entry',this)">↓ Entrada de estoque</button>
+        <button class="nav-btn" onclick="showTab('exit',this)">↑ Saída de estoque</button>
+        <button class="nav-btn" onclick="showTab('audit',this)">⌕ Auditoria</button>
+        <button class="nav-btn" onclick="showTab('explorer',this)">◈ Blockchain</button>
+
+        <div class="sidebar-bottom">
+            <span class="status-dot"></span>
+            Rede Ethereum Sepolia
+        </div>
+    </aside>
+
+    <main class="main-content">
+
+        <div id="alertBox" class="alert hidden"></div>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard" class="tab">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">PAINEL DE CONTROLE</span>
+                    <h2>Visão geral do estoque</h2>
+                    <p>Acompanhe os produtos e movimentações registrados na Ethereum.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="loadDashboard()">↻ Atualizar</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <span>Produtos cadastrados</span>
+                    <strong id="totalProducts">—</strong>
+                    <small>Produtos registrados</small>
+                </div>
+                <div class="stat-card">
+                    <span>Movimentações</span>
+                    <strong id="totalMovements">—</strong>
+                    <small>Registros na blockchain</small>
+                </div>
+                <div class="stat-card">
+                    <span>Carteira conectada</span>
+                    <strong id="walletShort">—</strong>
+                    <small>Operador atual</small>
+                </div>
+                <div class="stat-card">
+                    <span>Rede</span>
+                    <strong id="networkName">—</strong>
+                    <small>Ambiente de testes</small>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <div>
+                        <h3>Produtos cadastrados</h3>
+                        <p>Posição atual do estoque</p>
+                    </div>
+                    <button class="btn btn-secondary" onclick="loadDashboard()">Atualizar lista</button>
+                </div>
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Código</th>
+                                <th>Produto</th>
+                                <th>Saldo</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productTable">
+                            <tr><td colspan="5" class="empty">Conecte sua carteira para consultar.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- CADASTRO -->
+        <section id="register" class="tab hidden">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">CADASTRO</span>
+                    <h2>Cadastrar produto</h2>
+                    <p>Registre um novo produto no livro razão da Ethereum.</p>
+                </div>
+            </div>
+
+            <div class="panel form-panel">
+                <h3>Dados do produto</h3>
+                <form id="registerForm">
+                    <label>Código / SKU</label>
+                    <input id="productCode" placeholder="Ex: PROD-101" required>
+
+                    <label>Nome do produto</label>
+                    <input id="productName" placeholder="Ex: Smartphone Galaxy S23" required>
+
+                    <label>Local de armazenamento inicial</label>
+                    <input id="productLocation" placeholder="Ex: Galpão Central - Setor A" required>
+
+                    <div class="fee-info">
+                        <span>Taxa de cadastro</span>
+                        <strong>0.001 ETH</strong>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-full">Registrar produto na blockchain</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- ENTRADA -->
+        <section id="entry" class="tab hidden">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">MOVIMENTAÇÃO</span>
+                    <h2>Entrada de estoque</h2>
+                    <p>Registre o recebimento de mercadorias.</p>
+                </div>
+            </div>
+
+            <div class="panel form-panel">
+                <h3>Dados da entrada</h3>
+                <form id="entryForm">
+                    <label>Produto</label>
+                    <select id="entryProduct" required>
+                        <option value="">Selecione um produto</option>
+                    </select>
+
+                    <label>Quantidade recebida</label>
+                    <input type="number" id="entryQuantity" min="1" required>
+
+                    <label>Local de armazenamento</label>
+                    <input id="entryLocation" placeholder="Ex: Galpão Central" required>
+
+                    <button type="submit" class="btn btn-primary btn-full">Registrar entrada</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- SAÍDA -->
+        <section id="exit" class="tab hidden">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">MOVIMENTAÇÃO</span>
+                    <h2>Saída de estoque</h2>
+                    <p>Registre retiradas com proteção antifraude.</p>
+                </div>
+            </div>
+
+            <div class="panel form-panel">
+                <h3>Dados da retirada</h3>
+                <form id="exitForm">
+                    <label>Produto</label>
+                    <select id="exitProduct" required>
+                        <option value="">Selecione um produto</option>
+                    </select>
+
+                    <div id="availableBalance" class="balance-info">Saldo disponível: —</div>
+
+                    <label>Quantidade retirada</label>
+                    <input type="number" id="exitQuantity" min="1" required>
+
+                    <label>Local de destino</label>
+                    <input id="exitLocation" placeholder="Ex: Filial Norte" required>
+
+                    <button type="submit" class="btn btn-primary btn-full">Confirmar saída</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- AUDITORIA -->
+        <section id="audit" class="tab hidden">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">RASTREABILIDADE</span>
+                    <h2>Auditoria de estoque</h2>
+                    <p>Consulte saldos e histórico criptográfico dos produtos.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Consultar histórico</h3>
+                <div class="search-row">
+                    <select id="auditProduct">
+                        <option value="">Selecione um produto</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="auditProduct()">Consultar</button>
+                </div>
+
+                <div id="auditBalance" class="audit-balance"></div>
+                <div id="historyResults"></div>
+            </div>
+        </section>
+
+        <!-- EXPLORADOR -->
+        <section id="explorer" class="tab hidden">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">ETHEREUM</span>
+                    <h2>Explorador blockchain</h2>
+                    <p>Consulte os registros e transações da aplicação.</p>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>Informações do contrato</h3>
+                <div class="contract-address" id="contractAddress">—</div>
+                <a id="contractLink" href="#" target="_blank" rel="noopener">Visualizar contrato no Etherscan ↗</a>
+            </div>
+
+            <div class="panel">
+                <div class="panel-heading">
+                    <h3>Movimentações registradas</h3>
+                    <button class="btn btn-secondary" onclick="loadExplorer()">Atualizar</button>
+                </div>
+                <div id="explorerResults"></div>
+            </div>
+        </section>
+
+        <footer>
+            StockChain · Sistema Antifraude de Controle de Estoque · Ethereum Sepolia
+        </footer>
+    </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
