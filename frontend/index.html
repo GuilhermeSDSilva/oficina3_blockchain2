@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -24,6 +23,7 @@
             Conectar MetaMask
         </button>
         <span id="walletAddress" class="wallet-address"></span>
+        <span id="walletBalance" class="wallet-balance"></span>
     </div>
 </header>
 
@@ -36,6 +36,7 @@
         <button class="nav-btn" onclick="showTab('exit',this)">↑ Saída de estoque</button>
         <button class="nav-btn" onclick="showTab('audit',this)">⌕ Auditoria</button>
         <button class="nav-btn" onclick="showTab('explorer',this)">◈ Blockchain</button>
+        <button id="adminMenuBtn" class="nav-btn hidden" onclick="showTab('admin',this)">⚙ Administração</button>
 
         <div class="sidebar-bottom">
             <span class="status-dot"></span>
@@ -249,12 +250,51 @@
             </div>
         </section>
 
+        <!-- ADMINISTRAÇÃO (APENAS DONO) -->
+        <section id="admin" class="tab hidden">
+            <div class="page-heading">
+                <div>
+                    <span class="eyebrow">ACESSO RESTRITO · OWNER</span>
+                    <h2>Painel Administrativo</h2>
+                    <p>Gerencie o status dos produtos e realize o saque das taxas acumuladas.</p>
+                </div>
+                <button class="btn btn-secondary" onclick="loadAdminPanel()">↻ Atualizar</button>
+            </div>
+
+            <div class="panel form-panel">
+                <h3>Taxas acumuladas no contrato</h3>
+                <div id="accumulatedFeesDisplay" class="balance-info">Saldo acumulado: —</div>
+                <button type="button" class="btn btn-primary btn-full" onclick="handleWithdrawFees()">
+                    Sacar taxas para carteira do administrador
+                </button>
+            </div>
+
+            <div class="panel form-panel">
+                <h3>Alterar status de produto</h3>
+                <form id="statusForm">
+                    <label>Produto</label>
+                    <select id="adminProduct" required>
+                        <option value="">Selecione um produto</option>
+                    </select>
+
+                    <label>Novo status</label>
+                    <select id="adminStatus" required>
+                        <option value="true">Ativo (liberado para movimentação)</option>
+                        <option value="false">Inativo (bloqueado para movimentação)</option>
+                    </select>
+
+                    <button type="submit" class="btn btn-primary btn-full">Atualizar status do produto</button>
+                </form>
+            </div>
+        </section>
+
         <footer>
             StockChain · Sistema Antifraude de Controle de Estoque · Ethereum Sepolia
         </footer>
     </main>
 </div>
 
+<script src="contrato.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

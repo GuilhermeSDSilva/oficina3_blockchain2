@@ -1,154 +1,12 @@
-
 // ============================================================
 // STOCKCHAIN - CONTROLE DE ESTOQUE ANTIFRAUDE
 // Integração: Web3.js + MetaMask + Ethereum Sepolia
 // ============================================================
 
-const CONTRACT_ADDRESS = "0x16CB2F162F521805177A59e749847aD33cb45F1a";
-
-const SEPOLIA_CHAIN_ID = 11155111;
-const EXPLORER_URL = "https://sepolia.etherscan.io";
-
-const REGISTRATION_FEE = "0.001";
-
-// ABI parcial: somente funções e eventos utilizados no frontend.
-const CONTRACT_ABI = [
-    {
-        "inputs": [],
-        "name": "REGISTRATION_FEE",
-        "outputs": [{"type":"uint256","name":""}],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "owner",
-        "outputs": [{"type":"address","name":""}],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalProducts",
-        "outputs": [{"type":"uint256","name":""}],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "totalMovements",
-        "outputs": [{"type":"uint256","name":""}],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [{"name":"code","type":"string"},{"name":"name","type":"string"},{"name":"location","type":"string"}],
-        "name": "registerProduct",
-        "outputs": [{"name":"","type":"uint256"}],
-        "stateMutability": "payable",
-        "type": "function"
-    },
-    {
-        "inputs": [{"name":"productId","type":"uint256"},{"name":"quantity","type":"uint256"},{"name":"location","type":"string"}],
-        "name": "registerEntry",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [{"name":"productId","type":"uint256"},{"name":"quantity","type":"uint256"},{"name":"location","type":"string"}],
-        "name": "registerExit",
-        "outputs": [],
-        "stateMutability": "nonpayable",
-        "type": "function"
-    },
-    {
-        "inputs": [{"name":"productId","type":"uint256"}],
-        "name": "getProductBalance",
-        "outputs": [{"name":"","type":"uint256"}],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [{"name":"productId","type":"uint256"}],
-        "name": "getProduct",
-        "outputs": [{
-            "name":"",
-            "type":"tuple",
-            "components":[
-                {"name":"id","type":"uint256"},
-                {"name":"code","type":"string"},
-                {"name":"name","type":"string"},
-                {"name":"skuHash","type":"bytes32"},
-                {"name":"creator","type":"address"},
-                {"name":"createdAt","type":"uint256"},
-                {"name":"active","type":"bool"}
-            ]
-        }],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [],
-        "name": "getAllProductIds",
-        "outputs": [{"name":"","type":"uint256[]"}],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "inputs": [
-            {"name":"productId","type":"uint256"},
-            {"name":"start","type":"uint256"},
-            {"name":"limit","type":"uint256"}
-        ],
-        "name": "getProductHistory",
-        "outputs": [{
-            "name":"",
-            "type":"tuple[]",
-            "components":[
-                {"name":"id","type":"uint256"},
-                {"name":"productId","type":"uint256"},
-                {"name":"action","type":"uint8"},
-                {"name":"quantity","type":"uint256"},
-                {"name":"signedDelta","type":"int256"},
-                {"name":"location","type":"string"},
-                {"name":"operator","type":"address"},
-                {"name":"timestamp","type":"uint256"}
-            ]
-        }],
-        "stateMutability": "view",
-        "type": "function"
-    },
-    {
-        "anonymous":false,
-        "inputs":[
-            {"indexed":true,"name":"productId","type":"uint256"},
-            {"indexed":true,"name":"movementId","type":"uint256"},
-            {"indexed":true,"name":"operator","type":"address"},
-            {"indexed":false,"name":"action","type":"uint8"},
-            {"indexed":false,"name":"quantity","type":"uint256"},
-            {"indexed":false,"name":"signedDelta","type":"int256"},
-            {"indexed":false,"name":"location","type":"string"},
-            {"indexed":false,"name":"timestamp","type":"uint256"}
-        ],
-        "name":"MovementRecorded",
-        "type":"event"
-    },
-    {
-        "anonymous":false,
-        "inputs":[
-            {"indexed":true,"name":"productId","type":"uint256"},
-            {"indexed":true,"name":"creator","type":"address"},
-            {"indexed":false,"name":"skuHash","type":"bytes32"}
-        ],
-        "name":"ProductRegistered",
-        "type":"event"
-    }
-];
-
 let web3;
 let contract;
 let account = null;
+let isOwner = false;
 let productsCache = [];
 
 // ============================================================
@@ -170,6 +28,15 @@ function hideAlert() {
 function shortAddress(address) {
     if (!address) return "—";
     return address.slice(0, 6) + "..." + address.slice(-4);
+}
+
+async function updateWalletBalance() {
+    if (!web3 || !account) return;
+
+    const balanceWei = await web3.eth.getBalance(account);
+    const balanceEth = Number(web3.utils.fromWei(balanceWei, "ether")).toFixed(4);
+
+    document.getElementById("walletBalance").textContent = `${balanceEth} ETH`;
 }
 
 function formatDate(timestamp) {
@@ -208,6 +75,18 @@ async function ensureSepolia() {
     }
 }
 
+async function checkAdminAccess() {
+    const contractOwner = await contract.methods.owner().call();
+    isOwner = account.toLowerCase() === contractOwner.toLowerCase();
+
+    const adminMenuBtn = document.getElementById("adminMenuBtn");
+    if (isOwner) {
+        adminMenuBtn.classList.remove("hidden");
+    } else {
+        adminMenuBtn.classList.add("hidden");
+    }
+}
+
 // ============================================================
 // CONEXÃO COM METAMASK
 // ============================================================
@@ -237,8 +116,12 @@ async function connectWallet() {
 
         contract = new web3.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS);
 
+        await checkAdminAccess();
+
         document.getElementById("walletAddress").textContent =
-            shortAddress(account);
+            shortAddress(account) + (isOwner ? " (Admin)" : "");
+
+        await updateWalletBalance();
 
         document.getElementById("walletShort").textContent =
             shortAddress(account);
@@ -256,7 +139,12 @@ async function connectWallet() {
         document.getElementById("contractLink").href =
             EXPLORER_URL + "/address/" + CONTRACT_ADDRESS;
 
-        showAlert("Carteira conectada com sucesso à Ethereum Sepolia!", "success");
+        showAlert(
+            isOwner
+                ? "Carteira de Administrador conectada à Ethereum Sepolia!"
+                : "Carteira conectada com sucesso à Ethereum Sepolia!",
+            "success"
+        );
 
         await loadDashboard();
 
@@ -298,6 +186,7 @@ function showTab(tabId, button) {
     if (tabId === "dashboard" && account) loadDashboard();
     if (tabId === "explorer" && account) loadExplorer();
     if (tabId === "audit" && account) loadProductSelectors();
+    if (tabId === "admin" && account && isOwner) loadAdminPanel();
 }
 
 // ============================================================
@@ -331,13 +220,13 @@ async function loadProducts() {
 async function loadProductSelectors() {
     const products = await loadProducts();
 
-    const selectors = [
+    const activeSelectors = [
         document.getElementById("entryProduct"),
         document.getElementById("exitProduct"),
         document.getElementById("auditProduct")
     ];
 
-    selectors.forEach(select => {
+    activeSelectors.forEach(select => {
         const previous = select.value;
 
         select.innerHTML = '<option value="">Selecione um produto</option>';
@@ -353,6 +242,24 @@ async function loadProductSelectors() {
             select.value = previous;
         }
     });
+
+    // O seletor do administrador lista TODOS os produtos (ativos e inativos)
+    const adminSelect = document.getElementById("adminProduct");
+    if (adminSelect) {
+        const previousAdmin = adminSelect.value;
+        adminSelect.innerHTML = '<option value="">Selecione um produto</option>';
+
+        products.forEach(product => {
+            const option = document.createElement("option");
+            option.value = product.id;
+            option.textContent = `${product.code} - ${product.name} (${product.active ? "Ativo" : "Inativo"})`;
+            adminSelect.appendChild(option);
+        });
+
+        if (products.some(p => p.id === previousAdmin)) {
+            adminSelect.value = previousAdmin;
+        }
+    }
 }
 
 // ============================================================
@@ -364,6 +271,7 @@ async function loadDashboard() {
 
     try {
         await ensureSepolia();
+        await updateWalletBalance();
 
         const totalProducts = await contract.methods.totalProducts().call();
         const totalMovements = await contract.methods.totalMovements().call();
@@ -404,6 +312,95 @@ async function loadDashboard() {
         showAlert("Erro ao atualizar painel: " + error.message, "error");
     }
 }
+
+// ============================================================
+// PAINEL ADMINISTRATIVO (APENAS OWNER)
+// ============================================================
+
+async function loadAdminPanel() {
+    if (!account || !contract || !isOwner) return;
+
+    try {
+        await ensureSepolia();
+        await loadProductSelectors();
+
+        const feesWei = await contract.methods.getAccumulatedFees().call({ from: account });
+        const feesEth = web3.utils.fromWei(feesWei, "ether");
+
+        document.getElementById("accumulatedFeesDisplay").textContent =
+            `Saldo acumulado disponível para saque: ${feesEth} ETH`;
+
+    } catch (error) {
+        showAlert("Erro ao carregar painel administrativo: " + error.message, "error");
+    }
+}
+
+async function handleWithdrawFees() {
+    hideAlert();
+
+    try {
+        requireConnection();
+        await ensureSepolia();
+
+        if (!isOwner) {
+            throw new Error("Apenas o administrador pode sacar as taxas.");
+        }
+
+        showAlert("Aguardando confirmação do saque na MetaMask...", "info");
+
+        const receipt = await contract.methods.withdrawFees().send({ from: account });
+
+        showAlert(
+            "Taxas sacadas com sucesso! Transação: " + receipt.transactionHash,
+            "success"
+        );
+
+        await updateWalletBalance();
+        await loadAdminPanel();
+
+    } catch (error) {
+        showAlert("Falha ao sacar taxas: " + error.message, "error");
+    }
+}
+
+document.getElementById("statusForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    hideAlert();
+
+    try {
+        requireConnection();
+        await ensureSepolia();
+
+        if (!isOwner) {
+            throw new Error("Apenas o administrador pode alterar o status de produtos.");
+        }
+
+        const productId = document.getElementById("adminProduct").value;
+        const active = document.getElementById("adminStatus").value === "true";
+
+        if (!productId) {
+            throw new Error("Selecione um produto.");
+        }
+
+        showAlert("Aguardando confirmação da alteração de status na MetaMask...", "info");
+
+        const receipt = await contract.methods.changeProductStatus(
+            productId,
+            active
+        ).send({ from: account });
+
+        showAlert(
+            "Status do produto atualizado com sucesso! Transação: " + receipt.transactionHash,
+            "success"
+        );
+
+        await loadAdminPanel();
+        await loadDashboard();
+
+    } catch (error) {
+        showAlert("Falha ao alterar status: " + error.message, "error");
+    }
+});
 
 // ============================================================
 // CADASTRO DE PRODUTOS
